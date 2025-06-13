@@ -1,0 +1,75 @@
+### Minio
+
+# MinIO root user.
+MINIO_ROOT_USER=minio-username
+
+# MinIO root password.
+MINIO_ROOT_PASSWORD=minio-password
+
+### Postgres
+
+# Postgres user.
+POSTGRES_USER=postgres-username
+
+# Postgres password.
+POSTGRES_PASSWORD=postgres-password
+
+# Postgres database.
+POSTGRES_DB=mlflow
+
+### MLFlow
+
+# MLFlow backend url.
+# Must be equal f"postgresql://{POSTGRES_USER}:{POSTGRES_PASSWORD}@postgres:5432/{POSTGRES_DB}".
+MLFLOW_BACKEND_STORE_URI=postgresql://postgres-username:postgres-password@postgres:5432/mlflow
+
+# MLFlow folder to store artifacts.
+# You shouldn't change it.
+MLFLOW_DEFAULT_ARTIFACT_ROOT=s3://mlflow-artifacts/
+
+# MLFlow S3 url.
+# You shouldn't change it.
+MLFLOW_S3_ENDPOINT_URL=http://minio:9000
+
+# MLFlow S3 username.
+# Should be equal MINIO_ROOT_USER.
+AWS_ACCESS_KEY_ID=username
+
+# MLFlow S3 password.
+# Should be equal MINIO_ROOT_PASSWORD.
+AWS_SECRET_ACCESS_KEY=password
+
+### Airflow
+
+# Airflow executor.
+# You shouldn't change it.
+AIRFLOW__CORE__EXECUTOR=LocalExecutor
+
+# Airflow backend.
+# Must be equal f"postgresql+psycopg2://{POSTGRES_USER}:{POSTGRES_PASSWORD}@postgres:5432/airflow".
+AIRFLOW__CORE__SQL_ALCHEMY_CONN=postgresql+psycopg2://postgres-username:postgres-password@postgres:5432/airflow
+
+# Airflow Fernet key.
+AIRFLOW__CORE__FERNET_KEY='A60pTrh4aXqfmkRzHI_0egi0vlPkaK2hqrCaagn3i-Q='
+
+# Airflow expose confuguration.
+# Possible values are: 'True', 'False', 'non-sensitive-only'.
+AIRFLOW__WEBSERVER__EXPOSE_CONFIG='non-sensitive-only'
+
+### Feast
+
+# Feast registry.
+# You shouldn't change it.
+FEAST_REGISTRY_PATH=feast_registry.db
+
+# Feast offline store type.
+# You shouldn't change it.
+FEAST_OFFLINE_STORE_TYPE=file
+
+# Feast online store type.
+# You shouldn't change it.
+FEAST_ONLINE_STORE_TYPE=redis
+
+# Feast online store url.
+# You shouldn't change it.
+FEAST_ONLINE_STORE_CONNECTION_STRING=redis://redis:6379

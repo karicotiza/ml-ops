@@ -1,0 +1,163 @@
+name: ml-infrastructure
+
+services:
+  minio:
+    image: minio/minio:RELEASE.2025-05-24T17-08-30Z
+    restart: unless-stopped
+    command: server /data
+      --console-address ":9001"
+    post_start:
+      - command: sleep 5
+      - command: /bin/sh -c "/usr/bin/mc config host add minio-server http://127.0.0.1:9000 $$MINIO_ROOT_USER $$MINIO_ROOT_PASSWORD"
+      - command: /usr/bin/mc mb minio-server/mlflow-artifacts --ignore-existing
+      - command: /usr/bin/mc policy download minio-server/mlflow-artifacts
+    ports:
+      - 9000:9000
+      - 9001:9001
+    healthcheck:
+      test: ["CMD-SHELL", "curl -I http://localhost:9000/minio/health/live"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 30s
+    env_file:
+      - ../../../build/env/.ml-infrastructure
+    volumes:
+      - ml-infrastructure-minio:/data/
+    networks:
+      - ml-infrastructure
+  
+  postgres:
+    image: postgres:17.5
+    restart: unless-stopped
+    command: postgres
+    post_start:
+      - command: sleep 5
+      - command: bash -c "psql -U $$POSTGRES_USER -d postgres -tc \"SELECT 1 FROM pg_database WHERE datname = 'airflow'\" | grep -q 1 || psql -U $$POSTGRES_USER -d postgres -c 'CREATE DATABASE airflow;'"
+      - command: bash -c "psql -U $$POSTGRES_USER -d postgres -tc \"SELECT 1 FROM pg_database WHERE datname = 'feast'\" | grep -q 1 || psql -U $$POSTGRES_USER -d postgres -c 'CREATE DATABASE feast;'"
+    ports:
+    - 5432:5432
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER -d mlflow"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 30s
+    env_file:
+      - ../../../build/env/.ml-infrastructure
+    volumes:
+      - ml-infrastructure-postgres:/var/lib/postgresql/data
+    networks:
+      - ml-infrastructure
+  
+  redis:
+    image: redis:8.0.2
+    restart: unless-stopped
+    command: redis-server --appendonly yes
+    ports:
+      - 6379:6379
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 30s
+    volumes:
+      - ml-infrastructure-redis:/data/
+    networks:
+      - ml-infrastructure
+
+  mlflow:
+    build:
+      dockerfile: ./build/docker/image/mlflow.Dockerfile
+      context: ../../../
+    restart: unless-stopped
+    entrypoint: mlflow server
+      --host 0.0.0.0
+      --port 5000
+    ports:
+      - 5000:5000
+    healthcheck:
+      test: ["CMD-SHELL", "curl -I http://localhost:5000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+    env_file:
+      - ../../../build/env/.ml-infrastructure
+    volumes:
+      - ml-infrastructure-mlflow:/app/
+    networks:
+      - ml-infrastructure
+    depends_on:
+      minio:
+        condition: service_healthy
+      postgres:
+        condition: service_healthy
+
+  airflow:
+    image: apache/airflow:3.0.2
+    restart: unless-stopped
+    command: bash -c "airflow db migrate && airflow standalone"
+    ports:
+      - 8080:8080
+    healthcheck:
+      test: ["CMD-SHELL", "curl -I http://localhost:8080/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 30s
+    env_file:
+      - ../../../build/env/.ml-infrastructure
+    volumes:
+      - ml-infrastructure-airflow:/opt/airflow/
+    networks:
+      - ml-infrastructure
+    depends_on:
+      postgres:
+        condition: service_healthy
+  
+  feast:
+    build:
+      dockerfile: ./build/docker/image/feast.Dockerfile
+      context: ../../../
+    restart: unless-stopped
+    ports:
+      - 6466:6566
+    healthcheck:
+      test: ["CMD-SHELL", "curl http://localhost:6566/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+    env_file:
+      - ../../../build/env/.ml-infrastructure
+    volumes:
+      - ../../../build/feast/:/feast/:ro
+      - ml-infrastructure-feast:/app/
+    networks:
+      - ml-infrastructure
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+volumes:
+  ml-infrastructure-minio:
+    name: ml-infrastructure-minio
+  ml-infrastructure-postgres:
+    name: ml-infrastructure-postgres
+  ml-infrastructure-redis:
+    name: ml-infrastructure-redis
+  ml-infrastructure-mlflow:
+    name: ml-infrastructure-mlflow
+  ml-infrastructure-airflow:
+    name: ml-infrastructure-airflow
+  ml-infrastructure-feast:
+    name: ml-infrastructure-feast
+
+networks:
+  ml-infrastructure:
+    name: ml-infrastructure
+    driver: bridge

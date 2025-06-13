@@ -1,0 +1,14 @@
+project: ml_infrastructure
+
+registry:
+  registry_type: sql
+  path: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/feast
+
+provider: local
+
+online_store:
+  type: redis
+  connection_string: redis://redis:6379
+
+offline_store:
+  type: file
