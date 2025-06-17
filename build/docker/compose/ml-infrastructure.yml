@@ -32,7 +32,7 @@ services:
     restart: unless-stopped
     command: postgres
     post_start:
-      - command: sleep 5
+      - command: sleep 15
       - command: bash -c "psql -U $$POSTGRES_USER -d postgres -tc \"SELECT 1 FROM pg_database WHERE datname = 'airflow'\" | grep -q 1 || psql -U $$POSTGRES_USER -d postgres -c 'CREATE DATABASE airflow;'"
       - command: bash -c "psql -U $$POSTGRES_USER -d postgres -tc \"SELECT 1 FROM pg_database WHERE datname = 'feast'\" | grep -q 1 || psql -U $$POSTGRES_USER -d postgres -c 'CREATE DATABASE feast;'"
     ports:

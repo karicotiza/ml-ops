@@ -2,7 +2,7 @@ project: ml_infrastructure
 
 registry:
   registry_type: sql
-  path: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/feast
+  path: postgresql+psycopg://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/feast
 
 provider: local
 
