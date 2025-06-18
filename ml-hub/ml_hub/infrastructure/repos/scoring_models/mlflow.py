@@ -1,20 +1,18 @@
 """MLFlow scoring models repositories code."""
 
-from typing import TYPE_CHECKING
+from typing import Any
 
 from mlflow import (
+    log_metrics,
     log_params,
-    search_registered_models,
     set_experiment,
     set_tracking_uri,
     start_run,
 )
-from mlflow.sklearn import log_model
+from mlflow.sklearn import load_model, log_model
+from sklearn.ensemble import RandomForestClassifier
 
-from ml_hub.domain.interfaces.ml.scoring import ScoringModel
-
-if TYPE_CHECKING:
-    from mlflow.entities import Experiment
+from ml_hub.infrastructure.ml.scoring.random_forest import RandomForest
 
 
 class ScoringModels:
@@ -22,38 +20,71 @@ class ScoringModels:
 
     def __init__(
         self,
-        tracking_uri: str,
+        uri: str,
+        experiment: str = "scoring-models",
     ) -> None:
         """Create new instance.
 
         Args:
-            tracking_uri (str): MLFlow tracking uri.
+            uri (str): MLFlow uri.
+            experiment (str, optional): experiment with scoring models.
+                Defaults to "scoring-models".
 
         """
-        set_tracking_uri(tracking_uri)
+        self._uri: str = uri
+        set_tracking_uri(self._uri)
 
-    def all(self) -> list[ScoringModel]:
-        """Get all scoring models.
+        self._experiment_id: str = set_experiment(experiment).experiment_id
+
+    def get(
+        self,
+        name: str,
+        version: str,
+    ) -> RandomForest:
+        """Get scoring model by name and version.
+
+        Args:
+            name (str): name of the model.
+            version (str): version of the model.
 
         Returns:
-            list(str): list of scoring models.
+            RandomForest: random forest scoring model.
 
         """
-        return [model.name for model in search_registered_models()]
+        set_tracking_uri(self._uri)
+
+        model_uri: str = f"models:/{name}/{version}"
+        model_instance: Any = load_model(model_uri) or ""
+
+        return RandomForest(
+            model_name=name,
+            model_version=version,
+            model_instance=model_instance,
+        )
 
     def add(
         self,
+        model: RandomForestClassifier,
         model_name: str,
-        experiment_name: str,
-        scoring_model: ScoringModel,
+        model_metrics: dict[str, float],
+        model_parameters: dict[Any, Any],
     ) -> None:
-        experiment: Experiment = set_experiment(experiment_name)
+        """Add scoring model.
 
-        with start_run(experiment_id=experiment.experiment_id):
-            log_params(params=scoring_model.model.get_params())
+        Args:
+            model (RandomForestClassifier): scoring model.
+            model_name (str): scoring model name.
+            model_metrics (dict[str, float]): scoring model metrics.
+            model_parameters (dict[Any, Any]): scoring model parameters.
 
+        """
+        set_tracking_uri(self._uri)
+
+        with start_run(experiment_id=self._experiment_id):
+            log_params(model_parameters)
+            log_metrics(model_metrics)
             log_model(
-                sk_model=scoring_model.model,
+                sk_model=model,
                 name=model_name,
                 registered_model_name=model_name,
             )
