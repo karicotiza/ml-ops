@@ -10,7 +10,7 @@ services:
       - command: sleep 5
       - command: /bin/sh -c "/usr/bin/mc config host add minio-server http://127.0.0.1:9000 $$MINIO_ROOT_USER $$MINIO_ROOT_PASSWORD"
       - command: /usr/bin/mc mb minio-server/mlflow-artifacts --ignore-existing
-      - command: /usr/bin/mc policy download minio-server/mlflow-artifacts
+      - command: /usr/bin/mc anonymous set public minio-server/mlflow-artifacts
     ports:
       - 9000:9000
       - 9001:9001

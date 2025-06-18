@@ -1,0 +1,60 @@
+[project]
+name = "ml-hub"
+version = "0.1.0"
+description = "ML Hub."
+readme = "README.md"
+requires-python = ">=3.13"
+dependencies = [
+    # MLFlow models repository.
+    "boto3>=1.38.37",
+    "mlflow>=3.1.0",
+]
+
+[dependency-groups]
+dev = [
+    # Linters.
+    "ruff>=0.11.13",
+    "wemake-python-styleguide>=1.1.0",
+
+    # Formatters.
+    "black>=25.1.0",
+
+    # Static analyzers.
+    "mypy>=1.16.0",
+    "pyright>=1.1.402",
+
+    # Tests.
+    "pytest-cov>=6.2.1",
+
+    # Scoring mock.
+    "scikit-learn>=1.7.0",
+
+    # Environment variables for infrastructure access.
+    "python-dotenv>=1.1.0",
+]
+
+[tool.coverage.run]
+omit = ["./ml_hub/domain/interfaces/*"]
+
+[tool.ruff]
+lint.select = ["ALL"]
+
+lint.ignore = [
+    "D203",  # D211 is incompatible with D203 and D211 have higher priority.
+    "D213",  # D212 is incompatible with D213 and D212 have higher priority.
+]
+
+line-length = 80
+
+[tool.ruff.lint.per-file-ignores]
+"tests/**/*.py" = [
+    "S101",  # Usage of assert statements.
+]
+
+[tool.black]
+line-length = 80
+
+[tool.pytest.ini_options]
+filterwarnings = [
+    "ignore::DeprecationWarning",
+]

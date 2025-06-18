@@ -33,11 +33,11 @@ MLFLOW_S3_ENDPOINT_URL=http://minio:9000
 
 # MLFlow S3 username.
 # Should be equal MINIO_ROOT_USER.
-AWS_ACCESS_KEY_ID=username
+AWS_ACCESS_KEY_ID=minio-username
 
 # MLFlow S3 password.
 # Should be equal MINIO_ROOT_PASSWORD.
-AWS_SECRET_ACCESS_KEY=password
+AWS_SECRET_ACCESS_KEY=minio-password
 
 ### Airflow
 
