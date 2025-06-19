@@ -1,1 +1,1 @@
-"""Interfaces code."""
+"""Interfaces."""

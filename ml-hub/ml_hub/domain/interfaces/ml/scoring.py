@@ -1,14 +1,15 @@
 """Scoring ML model interface."""
 
-from typing import Any, Protocol
+from typing import Protocol
 
-from sklearn.ensemble import RandomForestClassifier
+from ml_hub.domain.value_objects.scoring_features import ScoringFeatures
 
 
-class ScoringModel(Protocol):
+class Scoring(Protocol):
     """Scoring ML model interface."""
 
-    def get_name(self) -> str:
+    @property
+    def name(self) -> str:
         """Get scoring model name.
 
         Returns:
@@ -17,7 +18,8 @@ class ScoringModel(Protocol):
         """
         ...
 
-    def get_version(self) -> str | None:
+    @property
+    def version(self) -> str | None:
         """Get scoring model version.
 
         Returns:
@@ -26,42 +28,14 @@ class ScoringModel(Protocol):
         """
         ...
 
-    def get_model(self) -> RandomForestClassifier:
-        """Get model.
-
-        Returns:
-            RandomForestClassifier: sklearn's random forest classifier.
-
-        """
-        ...
-
-    def get_parameters(self) -> dict[Any, Any]:
-        """Get scoring model parameters.
-
-        Returns:
-            dict[Any, Any]: parameters as dict.
-
-        """
-        ...
-
-    def predict(
-        self,
-        credit_utilization_ratio: float,
-        payment_history: float,
-        length_of_credit_history: float,
-        number_of_open_credit_accounts: float,
-    ) -> bool:
+    def predict(self, features: ScoringFeatures) -> float:
         """Predict scoring.
 
         Args:
-            credit_utilization_ratio (float): credit_utilization_ratio
-            payment_history (float): payment_history
-            length_of_credit_history (float): length of credit history
-            number_of_open_credit_accounts (float): number of open credit
-                accounts.
+            features (ScoringFeatures): scoring features.
 
         Returns:
-            bool: prediction.
+            float: prediction.
 
         """
         ...

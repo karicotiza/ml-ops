@@ -1,4 +1,4 @@
-"""MLFlow scoring models repositories code."""
+"""MLFlow scoring models repository."""
 
 from typing import Any
 
@@ -10,12 +10,13 @@ from mlflow import (
     start_run,
 )
 from mlflow.sklearn import load_model, log_model
-from sklearn.ensemble import RandomForestClassifier
+from sklearn.base import BaseEstimator
 
-from ml_hub.infrastructure.ml.scoring.random_forest import RandomForest
+from ml_hub.domain.value_objects.model_info import ModelInfo
+from ml_hub.infrastructure.ml.scoring.mlflow import MLFlowScoring
 
 
-class ScoringModels:
+class MLFLowScoringModels:
     """MLFLow scoring models."""
 
     def __init__(
@@ -40,7 +41,7 @@ class ScoringModels:
         self,
         name: str,
         version: str,
-    ) -> RandomForest:
+    ) -> MLFlowScoring:
         """Get scoring model by name and version.
 
         Args:
@@ -48,7 +49,7 @@ class ScoringModels:
             version (str): version of the model.
 
         Returns:
-            RandomForest: random forest scoring model.
+            Scoring: scoring model.
 
         """
         set_tracking_uri(self._uri)
@@ -56,35 +57,31 @@ class ScoringModels:
         model_uri: str = f"models:/{name}/{version}"
         model_instance: Any = load_model(model_uri) or ""
 
-        return RandomForest(
-            model_name=name,
-            model_version=version,
-            model_instance=model_instance,
+        return MLFlowScoring(
+            name=name,
+            version=version,
+            model=model_instance,
         )
 
     def add(
         self,
-        model: RandomForestClassifier,
-        model_name: str,
-        model_metrics: dict[str, float],
-        model_parameters: dict[Any, Any],
+        model: BaseEstimator,
+        model_info: ModelInfo,
     ) -> None:
         """Add scoring model.
 
         Args:
-            model (RandomForestClassifier): scoring model.
-            model_name (str): scoring model name.
-            model_metrics (dict[str, float]): scoring model metrics.
-            model_parameters (dict[Any, Any]): scoring model parameters.
+            model (BaseEstimator): scoring model instance.
+            model_info (ModelInfo): scoring model info.
 
         """
         set_tracking_uri(self._uri)
 
         with start_run(experiment_id=self._experiment_id):
-            log_params(model_parameters)
-            log_metrics(model_metrics)
+            log_params(model_info.training_parameters)
+            log_metrics(model_info.metrics)
             log_model(
                 sk_model=model,
-                name=model_name,
-                registered_model_name=model_name,
+                name=model_info.name,
+                registered_model_name=model_info.name,
             )

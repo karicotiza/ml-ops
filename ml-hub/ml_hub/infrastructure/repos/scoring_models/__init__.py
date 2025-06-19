@@ -1,1 +1,1 @@
-"""Scoring models repositories code."""
+"""Scoring models repositories."""

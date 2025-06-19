@@ -1,1 +1,1 @@
-"""Domain code."""
+"""Domain layer."""

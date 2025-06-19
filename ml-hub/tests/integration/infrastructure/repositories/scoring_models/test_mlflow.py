@@ -4,24 +4,27 @@ from random import random
 from typing import TYPE_CHECKING
 
 import pytest
-from sklearn.ensemble import RandomForestClassifier
 
-from ml_hub.infrastructure.repos.scoring_models.mlflow import ScoringModels
+from ml_hub.domain.value_objects.model_info import ModelInfo
+from ml_hub.domain.value_objects.scoring_features import ScoringFeatures
+from ml_hub.infrastructure.repos.scoring_models.mlflow import (
+    MLFLowScoringModels,
+)
 from tests.mock.infrastructure.ml.scoring import ScoringModelMock
 
 if TYPE_CHECKING:
-    from ml_hub.infrastructure.ml.scoring.random_forest import RandomForest
+    from ml_hub.infrastructure.ml.scoring.mlflow import MLFlowScoring
 
 
 @pytest.fixture
-def scoring_models() -> ScoringModels:
-    """Create ScoringModels fixture.
+def mlflow_scoring_models() -> MLFLowScoringModels:
+    """Create MLFLowScoringModels fixture.
 
     Returns:
-        ScoringModels: ScoringModels instance.
+        MLFLowScoringModels: MLFLowScoringModels instance.
 
     """
-    return ScoringModels(
+    return MLFLowScoringModels(
         uri="http://localhost:5000",
         experiment="tests-integration",
     )
@@ -36,45 +39,55 @@ def scoring_models() -> ScoringModels:
         ("scoring-model-001", 5),
     ],
 )
-def test_scoring_models_get(
+def test_mlflow_scoring_models_get(
     expected_name: str,
     expected_version: int,
-    scoring_models: ScoringModels,
+    mlflow_scoring_models: MLFLowScoringModels,
 ) -> None:
-    """Test ScoringModels's get method.
+    """Test MLFLowScoringModels's get method.
 
     Args:
         expected_name (str): expected name.
         expected_version (int): expected version.
-        scoring_models (ScoringModels): ScoringModels fixture.
+        mlflow_scoring_models (MLFLowScoringModels): MLFLowScoringModels
+            fixture.
 
     """
     for index in range(expected_version):
-        model: ScoringModelMock = ScoringModelMock(index)
+        mock: ScoringModelMock = ScoringModelMock(index)
 
-        scoring_models.add(
-            model=model.get_model(),
-            model_name=expected_name,
-            model_metrics={
-                "accuracy": random(),  # noqa: S311
-                "auc": random(),  # noqa: S311
-            },
-            model_parameters=model.get_parameters(),
+        mlflow_scoring_models.add(
+            model=mock.model,
+            model_info=ModelInfo(
+                name=expected_name,
+                description="Integration tests model.",
+                metrics={
+                    "accuracy": random(),  # noqa: S311
+                    "auc": random(),  # noqa: S311
+                },
+                training_parameters=mock.training_parameters,
+                tags=[
+                    "tests",
+                    "integration",
+                ],
+            ),
         )
 
-    downloaded_model: RandomForest = scoring_models.get(
+    downloaded_model: MLFlowScoring = mlflow_scoring_models.get(
         name=expected_name,
         version="1",
     )
 
-    prediction: bool = downloaded_model.predict(
-        credit_utilization_ratio=0,
-        payment_history=0,
-        length_of_credit_history=0,
-        number_of_open_credit_accounts=0,
+    prediction: float = downloaded_model.predict(
+        features=ScoringFeatures(
+            credit_utilization_ratio=0,
+            payment_history=0,
+            length_of_credit_history=0,
+            number_of_open_credit_accounts=0,
+        ),
     )
 
-    assert isinstance(prediction, bool)
+    assert isinstance(prediction, float)
 
 
 @pytest.mark.parametrize(
@@ -89,38 +102,44 @@ def test_scoring_models_get(
         ),
     ],
 )
-def test_scoring_models_add(
+def test_mlflow_scoring_models_add(
     expected_name: str,
     expected_version: str,
-    scoring_models: ScoringModels,
+    mlflow_scoring_models: MLFLowScoringModels,
 ) -> None:
-    """Test ScoringModels's add method.
+    """Test MLFLowScoringModels's add method.
 
     Args:
         expected_name (str): expected name.
         expected_version (str): expected version.
-        scoring_models (ScoringModels): ScoringModels fixture.
+        mlflow_scoring_models (MLFLowScoringModels): MLFLowScoringModels
+            fixture.
 
     """
-    model: ScoringModelMock = ScoringModelMock(0)
+    mock: ScoringModelMock = ScoringModelMock(0)
 
-    scoring_models.add(
-        model=model.get_model(),
-        model_name=expected_name,
-        model_metrics={
-            "metric-a": 1,
-            "metric-b": 1,
-            "metric-c": 1,
-        },
-        model_parameters=model.get_parameters(),
+    mlflow_scoring_models.add(
+        model=mock.model,
+        model_info=ModelInfo(
+            name=expected_name,
+            description="Integration tests model.",
+            metrics={
+                "metric-a": 1,
+                "metric-b": 1,
+                "metric-c": 1,
+            },
+            training_parameters=mock.training_parameters,
+            tags=[
+                "tests",
+                "integration",
+            ],
+        ),
     )
 
-    downloaded_model: RandomForest = scoring_models.get(
+    downloaded_model: MLFlowScoring = mlflow_scoring_models.get(
         name=expected_name,
         version=expected_version,
     )
 
-    assert downloaded_model.get_name() == expected_name
-    assert downloaded_model.get_version() == expected_version
-    assert isinstance(downloaded_model.get_parameters(), dict)
-    assert isinstance(downloaded_model.get_model(), RandomForestClassifier)
+    assert downloaded_model.name == expected_name
+    assert downloaded_model.version == expected_version

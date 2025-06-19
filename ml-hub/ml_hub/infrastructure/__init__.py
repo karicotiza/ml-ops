@@ -1,1 +1,1 @@
-"""Infrastructure code."""
+"""Infrastructure layer."""

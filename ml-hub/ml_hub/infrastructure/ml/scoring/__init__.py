@@ -1,1 +1,1 @@
-"""Scoring ML models code."""
+"""Scoring ML models."""
