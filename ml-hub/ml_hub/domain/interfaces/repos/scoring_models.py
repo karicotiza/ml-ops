@@ -5,7 +5,7 @@ from typing import Protocol
 from sklearn.base import BaseEstimator
 
 from ml_hub.domain.interfaces.ml.scoring import Scoring
-from ml_hub.domain.value_objects.model_info import ModelInfo
+from ml_hub.domain.value_objects.metadata import Metadata
 
 
 class ScoringModels(Protocol):
@@ -31,13 +31,13 @@ class ScoringModels(Protocol):
     def add(
         self,
         model: BaseEstimator,
-        model_info: ModelInfo,
+        metadata: Metadata,
     ) -> None:
         """Add scoring model.
 
         Args:
             model (BaseEstimator): scoring model instance.
-            model_info (ModelInfo): scoring model info.
+            metadata (Metadata): metadata.
 
         """
         ...

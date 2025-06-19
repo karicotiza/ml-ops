@@ -3,21 +3,26 @@
 from typing import Any
 
 from mlflow import (
+    MlflowClient,
     log_metrics,
     log_params,
     set_experiment,
+    set_tag,
+    set_tags,
     set_tracking_uri,
     start_run,
 )
 from mlflow.sklearn import load_model, log_model
 from sklearn.base import BaseEstimator
 
-from ml_hub.domain.value_objects.model_info import ModelInfo
+from ml_hub.domain.value_objects.metadata import Metadata
 from ml_hub.infrastructure.ml.scoring.mlflow import MLFlowScoring
 
 
 class MLFLowScoringModels:
     """MLFLow scoring models."""
+
+    _description_tag_name: str = "mlflow.note.content"
 
     def __init__(
         self,
@@ -66,22 +71,77 @@ class MLFLowScoringModels:
     def add(
         self,
         model: BaseEstimator,
-        model_info: ModelInfo,
+        metadata: Metadata,
     ) -> None:
         """Add scoring model.
 
         Args:
             model (BaseEstimator): scoring model instance.
-            model_info (ModelInfo): scoring model info.
+            metadata (Metadata): metadata.
 
         """
         set_tracking_uri(self._uri)
 
-        with start_run(experiment_id=self._experiment_id):
-            log_params(model_info.training_parameters)
-            log_metrics(model_info.metrics)
+        self._add_run_info(
+            model=model,
+            metadata=metadata,
+        )
+
+        self._add_model_info(
+            metadata=metadata,
+        )
+
+    def _add_run_info(
+        self,
+        model: BaseEstimator,
+        metadata: Metadata,
+    ) -> None:
+        with start_run(
+            experiment_id=self._experiment_id,
+            run_name=metadata.run_name,
+        ):
+            set_tag(self._description_tag_name, metadata.run_description)
+            log_metrics(metadata.run_metrics)
+            log_params(metadata.run_parameters)
+            set_tags(metadata.run_tags)
             log_model(
                 sk_model=model,
-                name=model_info.name,
-                registered_model_name=model_info.name,
+                name=metadata.model_name,
+                registered_model_name=metadata.model_name,
+            )
+
+    def _add_model_info(
+        self,
+        metadata: Metadata,
+    ) -> None:
+        client: MlflowClient = MlflowClient()
+
+        latest_version: str = client.get_latest_versions(
+            name=metadata.model_name,
+        )[0].version
+
+        client.update_model_version(
+            name=metadata.model_name,
+            version=latest_version,
+            description=metadata.version_description,
+        )
+
+        client.update_registered_model(
+            name=metadata.model_name,
+            description=metadata.model_description,
+        )
+
+        for tag_name, tag_value in metadata.version_tags.items():
+            client.set_model_version_tag(
+                name=metadata.model_name,
+                version=latest_version,
+                key=tag_name,
+                value=tag_value,
+            )
+
+        for tag_name, tag_value in metadata.model_tags.items():
+            client.set_registered_model_tag(
+                name=metadata.model_name,
+                key=tag_name,
+                value=tag_value,
             )

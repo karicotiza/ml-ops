@@ -1,11 +1,12 @@
 """MLFLow models repository integration tests."""
 
+from datetime import UTC, datetime
 from random import random
 from typing import TYPE_CHECKING
 
 import pytest
 
-from ml_hub.domain.value_objects.model_info import ModelInfo
+from ml_hub.domain.value_objects.metadata import Metadata
 from ml_hub.domain.value_objects.scoring_features import ScoringFeatures
 from ml_hub.infrastructure.repos.scoring_models.mlflow import (
     MLFLowScoringModels,
@@ -58,18 +59,30 @@ def test_mlflow_scoring_models_get(
 
         mlflow_scoring_models.add(
             model=mock.model,
-            model_info=ModelInfo(
-                name=expected_name,
-                description="Integration tests model.",
-                metrics={
+            metadata=Metadata(
+                model_name=expected_name,
+                model_description="integration-tests-model-description",
+                model_tags={
+                    "model-tag": "model-tag-value",
+                    "framework": "sklearn",
+                    "architecture": "random-forest-classifier",
+                },
+                version_description="integration-tests-version-description",
+                version_tags={
+                    "version-tag": "version-tag-value",
+                },
+                run_name=str(
+                    object=datetime.now(UTC),
+                ),
+                run_description="integration-tests-run-description",
+                run_tags={
+                    "run-tag": "run-tag-value",
+                },
+                run_metrics={
                     "accuracy": random(),  # noqa: S311
                     "auc": random(),  # noqa: S311
                 },
-                training_parameters=mock.training_parameters,
-                tags=[
-                    "tests",
-                    "integration",
-                ],
+                run_parameters=mock.training_parameters,
             ),
         )
 
@@ -120,19 +133,30 @@ def test_mlflow_scoring_models_add(
 
     mlflow_scoring_models.add(
         model=mock.model,
-        model_info=ModelInfo(
-            name=expected_name,
-            description="Integration tests model.",
-            metrics={
-                "metric-a": 1,
-                "metric-b": 1,
-                "metric-c": 1,
+        metadata=Metadata(
+            model_name=expected_name,
+            model_description="integration-tests-model-description",
+            model_tags={
+                "model-tag": "model-tag-value",
+                "framework": "sklearn",
+                "architecture": "random-forest-classifier",
             },
-            training_parameters=mock.training_parameters,
-            tags=[
-                "tests",
-                "integration",
-            ],
+            version_description="integration-tests-version-description",
+            version_tags={
+                "version-tag": "version-tag-value",
+            },
+            run_name=str(
+                object=datetime.now(UTC),
+            ),
+            run_description="integration-tests-run-description",
+            run_tags={
+                "run-tag": "run-tag-value",
+            },
+            run_metrics={
+                "accuracy": random(),  # noqa: S311
+                "auc": random(),  # noqa: S311
+            },
+            run_parameters=mock.training_parameters,
         ),
     )
 
