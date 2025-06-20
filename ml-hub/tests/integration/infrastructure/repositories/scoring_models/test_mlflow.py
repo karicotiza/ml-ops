@@ -82,7 +82,14 @@ def test_mlflow_scoring_models_get(
                     "accuracy": random(),  # noqa: S311
                     "auc": random(),  # noqa: S311
                 },
-                run_parameters=mock.training_parameters,
+                run_parameters=mock.run_parameters,
+                dataset_name="integration-tests-dataset",
+                dataset_tags={
+                    "dataset-tag": "dataset-tag-value",
+                },
+                dataset_features=mock.dataset_features,
+                dataset_targets=mock.dataset_targets,
+                dataset_split="train",
             ),
         )
 
@@ -156,7 +163,14 @@ def test_mlflow_scoring_models_add(
                 "accuracy": random(),  # noqa: S311
                 "auc": random(),  # noqa: S311
             },
-            run_parameters=mock.training_parameters,
+            run_parameters=mock.run_parameters,
+            dataset_name="integration-tests-dataset",
+            dataset_tags={
+                "dataset-tag": "dataset-tag-value",
+            },
+            dataset_features=mock.dataset_features,
+            dataset_targets=mock.dataset_targets,
+            dataset_split="train",
         ),
     )
 

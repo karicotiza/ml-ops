@@ -19,3 +19,9 @@ class Metadata:
     run_tags: dict[str, str]
     run_metrics: dict[str, float]
     run_parameters: dict[str, str]
+
+    dataset_name: str
+    dataset_tags: dict[str, str]
+    dataset_features: list[list[str | float]]
+    dataset_targets: list[str | float]
+    dataset_split: str

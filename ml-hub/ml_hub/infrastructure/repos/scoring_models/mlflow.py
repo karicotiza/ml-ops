@@ -3,7 +3,7 @@
 from typing import Any
 
 from mlflow import (
-    MlflowClient,
+    log_input,
     log_metrics,
     log_params,
     set_experiment,
@@ -12,11 +12,17 @@ from mlflow import (
     set_tracking_uri,
     start_run,
 )
+from mlflow.data.numpy_dataset import from_numpy as make_dataset_from_numpy
+from mlflow.models.signature import infer_signature
 from mlflow.sklearn import load_model, log_model
-from sklearn.base import BaseEstimator
+from mlflow.tracking.client import MlflowClient
+from numpy import array
+from sklearn.ensemble import RandomForestClassifier, RandomForestRegressor
 
 from ml_hub.domain.value_objects.metadata import Metadata
 from ml_hub.infrastructure.ml.scoring.mlflow import MLFlowScoring
+
+type AnySklearnModel = RandomForestRegressor | RandomForestClassifier
 
 
 class MLFLowScoringModels:
@@ -70,7 +76,7 @@ class MLFLowScoringModels:
 
     def add(
         self,
-        model: BaseEstimator,
+        model: AnySklearnModel,
         metadata: Metadata,
     ) -> None:
         """Add scoring model.
@@ -93,7 +99,7 @@ class MLFLowScoringModels:
 
     def _add_run_info(
         self,
-        model: BaseEstimator,
+        model: AnySklearnModel,
         metadata: Metadata,
     ) -> None:
         with start_run(
@@ -108,6 +114,22 @@ class MLFLowScoringModels:
                 sk_model=model,
                 name=metadata.model_name,
                 registered_model_name=metadata.model_name,
+                signature=infer_signature(
+                    model_input=array(metadata.dataset_features),
+                    model_output=array(
+                        object=model.predict(metadata.dataset_features),
+                    ),
+                ),
+                input_example=metadata.dataset_features[:5],
+            )
+            log_input(
+                dataset=make_dataset_from_numpy(
+                    features=array(metadata.dataset_features),
+                    targets=array(metadata.dataset_targets),
+                    name=metadata.dataset_name,
+                ),
+                context=metadata.dataset_split,
+                tags=metadata.dataset_tags,
             )
 
     def _add_model_info(
