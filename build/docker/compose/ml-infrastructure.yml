@@ -4,13 +4,9 @@ services:
   minio:
     image: minio/minio:RELEASE.2025-05-24T17-08-30Z
     restart: unless-stopped
-    command: server /data
-      --console-address ":9001"
-    post_start:
-      - command: sleep 5
-      - command: /bin/sh -c "/usr/bin/mc config host add minio-server http://127.0.0.1:9000 $$MINIO_ROOT_USER $$MINIO_ROOT_PASSWORD"
-      - command: /usr/bin/mc mb minio-server/mlflow-artifacts --ignore-existing
-      - command: /usr/bin/mc anonymous set public minio-server/mlflow-artifacts
+    command: server /data --console-address ":9001"
+    post_start: 
+      - command: /post_start/minio.sh
     ports:
       - 9000:9000
       - 9001:9001
@@ -23,6 +19,7 @@ services:
     env_file:
       - ../../../build/env/.ml-infrastructure
     volumes:
+      - ../../../build/docker/post_start/minio.sh:/post_start/minio.sh
       - ml-infrastructure-minio:/data/
     networks:
       - ml-infrastructure
@@ -31,10 +28,8 @@ services:
     image: postgres:17.5
     restart: unless-stopped
     command: postgres
-    post_start:
-      - command: sleep 15
-      - command: bash -c "psql -U $$POSTGRES_USER -d postgres -tc \"SELECT 1 FROM pg_database WHERE datname = 'airflow'\" | grep -q 1 || psql -U $$POSTGRES_USER -d postgres -c 'CREATE DATABASE airflow;'"
-      - command: bash -c "psql -U $$POSTGRES_USER -d postgres -tc \"SELECT 1 FROM pg_database WHERE datname = 'feast'\" | grep -q 1 || psql -U $$POSTGRES_USER -d postgres -c 'CREATE DATABASE feast;'"
+    post_start: 
+      - command: /post_start/postgres.sh
     ports:
     - 5432:5432
     healthcheck:
@@ -46,6 +41,7 @@ services:
     env_file:
       - ../../../build/env/.ml-infrastructure
     volumes:
+      - ../../../build/docker/post_start/postgres.sh:/post_start/postgres.sh
       - ml-infrastructure-postgres:/var/lib/postgresql/data
     networks:
       - ml-infrastructure
